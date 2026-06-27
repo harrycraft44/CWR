@@ -417,10 +417,22 @@ void EngineGL33::DrawLine(int beg, int end)
 
     float dSize = dSize2 * invDSize;
 
+    float w = 3.0f;
+
+    PackedColor col0 = v0.color;
+    PackedColor col1 = v1.color;
+
+    // Deep math logging: 2D segment inputs
+    static int s_lineLogCounter = 0;
+    if (++s_lineLogCounter % 500 == 0)
+    {
+        LOG_INFO(Graphics, "[RENDER_MATH] DrawLine 2D Input: P0({:.1f}, {:.1f}, Z={:.3f}, W={:.4f}), P1({:.1f}, {:.1f}, Z={:.3f}, W={:.4f}), Width: {:.2f}px",
+                 x0, y0, z0, w0, x1, y1, z1, w1, w);
+    }
+
     // direction perpendicular dx, dy
     // 2D line drawing
     float pdx = +dy * invDSize, pdy = -dx * invDSize;
-    float w = 3.0f;
     x0 -= pdx * (w * 0.5);
     x1 -= pdx * (w * 0.5);
     y0 -= pdy * (w * 0.5);
@@ -436,7 +448,7 @@ void EngineGL33::DrawLine(int beg, int end)
     vertices[0].w = w0;
     vertices[0].u = 0;
     vertices[0].v = 0.25;
-    vertices[0].color = v0.color;
+    vertices[0].color = col0;
 
     vertices[1].x = x0Side - off;
     vertices[1].y = y0Side - off;
@@ -444,7 +456,7 @@ void EngineGL33::DrawLine(int beg, int end)
     vertices[1].w = w0;
     vertices[1].u = 0;
     vertices[1].v = 1;
-    vertices[1].color = v0.color;
+    vertices[1].color = col0;
 
     vertices[2].x = x1Side - off;
     vertices[2].y = y1Side - off;
@@ -452,7 +464,7 @@ void EngineGL33::DrawLine(int beg, int end)
     vertices[2].w = w1;
     vertices[2].u = dSize;
     vertices[2].v = 1;
-    vertices[2].color = v1.color;
+    vertices[2].color = col1;
 
     vertices[3].x = x1 - off;
     vertices[3].y = y1 - off;
@@ -460,7 +472,7 @@ void EngineGL33::DrawLine(int beg, int end)
     vertices[3].w = w1;
     vertices[3].u = dSize;
     vertices[3].v = 0.25;
-    vertices[3].color = v1.color;
+    vertices[3].color = col1;
 
     Rect2DAbs clip(0, 0, _w, _h);
 

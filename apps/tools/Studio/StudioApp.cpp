@@ -1558,8 +1558,15 @@ void StudioApp::render(const ImVec2& displaySize)
         }
         else
         {
-            renderInfoPanel(0, 0, rightW, topH * 0.30f);
-            renderPreviewPanel(0, 0, rightW, topH * 0.70f);
+            if (visualEditorMode && currentPreview == PreviewType::Config)
+            {
+                renderPreviewPanel(0, 0, rightW, topH);
+            }
+            else
+            {
+                renderInfoPanel(0, 0, rightW, topH * 0.30f);
+                renderPreviewPanel(0, 0, rightW, topH * 0.70f);
+            }
         }
         renderLogPanel(0, 0, rightW, logH);
         ImGui::EndGroup();
@@ -2262,28 +2269,80 @@ void StudioApp::renderPreviewPanel(float, float, float w, float h)
     }
     if (currentPreview == PreviewType::Config && !selectedFile.empty())
     {
-        ImGui::SameLine();
-        if (ImGui::SmallButton("+##cfgexpand"))
-            configForceOpen = 1;
-        ImGui::SameLine();
-        if (ImGui::SmallButton("-##cfgcollapse"))
-            configForceOpen = -1;
-        ImGui::SameLine();
-        float searchW = ImGui::GetContentRegionAvail().x - 60.0f;
-        if (searchW > 80.0f)
-            ImGui::SetNextItemWidth(searchW);
-        if (ImGui::InputText("##cfgsearch", configSearch, sizeof(configSearch), ImGuiInputTextFlags_EnterReturnsTrue))
-            runConfigSearch();
-        ImGui::SameLine();
-        if (ImGui::SmallButton("X##cfgclear"))
+        std::string ext = selectedEntry.extension;
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+        if (ext == ".sqm")
         {
-            memset(configSearch, 0, sizeof(configSearch));
-            configSearchActive = false;
-            configSearchResults.clear();
+            ImGui::SameLine();
+            if (ImGui::Checkbox("Visual Editor", &visualEditorMode))
+            {
+                if (visualEditorMode && configFile)
+                {
+                    missionEditor.load(*configFile);
+                }
+            }
+            if (visualEditorMode)
+            {
+                ImGui::SameLine();
+                if (ImGui::Button("Save Level"))
+                {
+                    if (missionEditor.save(configFilePath))
+                    {
+                        log("Level saved: " + configFilePath);
+                        auto cf = std::make_shared<ParamFile>();
+                        if (cf->Parse(configFilePath.c_str()) == LSOK)
+                        {
+                            configFile = std::move(cf);
+                            missionEditor.load(*configFile);
+                        }
+                    }
+                    else
+                    {
+                        log("Error: Failed to save level: " + configFilePath);
+                    }
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Starter Preset"))
+                {
+                    missionEditor.clear();
+                    missionEditor.save(configFilePath);
+                    auto cf = std::make_shared<ParamFile>();
+                    if (cf->Parse(configFilePath.c_str()) == LSOK)
+                    {
+                        configFile = std::move(cf);
+                        missionEditor.load(*configFile);
+                        log("Starter preset loaded.");
+                    }
+                }
+            }
         }
-        ImGui::SameLine();
-        if (ImGui::SmallButton("Go##cfggo"))
-            runConfigSearch();
+
+        if (!visualEditorMode)
+        {
+            ImGui::SameLine();
+            if (ImGui::SmallButton("+##cfgexpand"))
+                configForceOpen = 1;
+            ImGui::SameLine();
+            if (ImGui::SmallButton("-##cfgcollapse"))
+                configForceOpen = -1;
+            ImGui::SameLine();
+            float searchW = ImGui::GetContentRegionAvail().x - 60.0f;
+            if (searchW > 80.0f)
+                ImGui::SetNextItemWidth(searchW);
+            if (ImGui::InputText("##cfgsearch", configSearch, sizeof(configSearch), ImGuiInputTextFlags_EnterReturnsTrue))
+                runConfigSearch();
+            ImGui::SameLine();
+            if (ImGui::SmallButton("X##cfgclear"))
+            {
+                memset(configSearch, 0, sizeof(configSearch));
+                configSearchActive = false;
+                configSearchResults.clear();
+            }
+            ImGui::SameLine();
+            if (ImGui::SmallButton("Go##cfggo"))
+                runConfigSearch();
+        }
     }
     ImGui::Separator();
 
@@ -2831,6 +2890,8 @@ void StudioApp::renderConfigPanel(float, float, float, float)
         configSearchActive = false;
         memset(configSearch, 0, sizeof(configSearch));
         configSearchResults.clear();
+        visualEditorMode = false;
+        missionEditor.clear();
         if (!path.empty())
         {
             auto cf = std::make_shared<ParamFile>();
@@ -2844,6 +2905,11 @@ void StudioApp::renderConfigPanel(float, float, float, float)
             else
                 ok = cf->ParseBin(path.c_str()) || cf->Parse(path.c_str()) == LSOK;
             configFile = ok ? std::move(cf) : nullptr;
+
+            if (configFile && ext == ".sqm")
+            {
+                missionEditor.load(*configFile);
+            }
         }
         else
         {
@@ -2857,42 +2923,50 @@ void StudioApp::renderConfigPanel(float, float, float, float)
         return;
     }
 
-    if (configSearchActive)
+    if (visualEditorMode && selectedEntry.extension == ".sqm")
     {
-        if (configSearchResults.empty())
-        {
-            ImGui::TextDisabled("No results for \"%s\"", configSearch);
-        }
-        else
-        {
-            ImGui::Text("%d result(s):", (int)configSearchResults.size());
-            ImGui::Separator();
-            for (const auto& r : configSearchResults)
-            {
-                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.9f, 0.6f, 1.0f));
-                ImGui::TextUnformatted(r.path.c_str());
-                ImGui::PopStyleColor();
-                if (r.entry && !r.entry->IsClass() && !r.entry->IsArray())
-                {
-                    ImGui::SameLine();
-                    if (r.entry->IsFloatValue())
-                    {
-                        char buf[32];
-                        snprintf(buf, sizeof(buf), "= %g", (float)*r.entry);
-                        ImGui::TextDisabled("%s", buf);
-                    }
-                    else if (r.entry->IsIntValue())
-                        ImGui::TextDisabled("= %d", (int)*r.entry);
-                    else
-                        ImGui::TextDisabled("= \"%s\"", r.entry->GetValue().Data());
-                }
-            }
-        }
+        ImVec2 contentSize = ImGui::GetContentRegionAvail();
+        missionEditor.render(contentSize.x, contentSize.y);
     }
     else
     {
-        renderConfigClassTree(*configFile, configForceOpen);
-        configForceOpen = 0;
+        if (configSearchActive)
+        {
+            if (configSearchResults.empty())
+            {
+                ImGui::TextDisabled("No results for \"%s\"", configSearch);
+            }
+            else
+            {
+                ImGui::Text("%d result(s):", (int)configSearchResults.size());
+                ImGui::Separator();
+                for (const auto& r : configSearchResults)
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.9f, 0.6f, 1.0f));
+                    ImGui::TextUnformatted(r.path.c_str());
+                    ImGui::PopStyleColor();
+                    if (r.entry && !r.entry->IsClass() && !r.entry->IsArray())
+                    {
+                        ImGui::SameLine();
+                        if (r.entry->IsFloatValue())
+                        {
+                            char buf[32];
+                            snprintf(buf, sizeof(buf), "= %g", (float)*r.entry);
+                            ImGui::TextDisabled("%s", buf);
+                        }
+                        else if (r.entry->IsIntValue())
+                            ImGui::TextDisabled("= %d", (int)*r.entry);
+                        else
+                            ImGui::TextDisabled("= \"%s\"", r.entry->GetValue().Data());
+                    }
+                }
+            }
+        }
+        else
+        {
+            renderConfigClassTree(*configFile, configForceOpen);
+            configForceOpen = 0;
+        }
     }
 }
 

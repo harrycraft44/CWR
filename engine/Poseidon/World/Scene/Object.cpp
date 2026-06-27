@@ -604,12 +604,26 @@ void Object::DeanimateLandContact()
 
 void Object::Move(Matrix4Par transform)
 {
-    GLOB_LAND->MoveObject(this, transform);
+    if (GLOB_LAND)
+    {
+        GLOB_LAND->MoveObject(this, transform);
+    }
+    else
+    {
+        SetTransform(transform);
+    }
 }
 
 void Object::Move(Vector3Par position)
 {
-    GLOB_LAND->MoveObject(this, position);
+    if (GLOB_LAND)
+    {
+        GLOB_LAND->MoveObject(this, position);
+    }
+    else
+    {
+        SetPosition(position);
+    }
 }
 
 void Object::MoveNetAware(Matrix4Par transform)
@@ -1410,6 +1424,7 @@ void Object::DrawLines(int level, ClipFlags clipFlags, const FrameBase& frame)
     {
         // try to clip bounding sphere; if the whole sphere is out the object is already skipped
         clipFlags &= GScene->GetCamera()->MayBeClipped(frame.Position(), GetRadius(), 1);
+        clipFlags |= ClipFront; // Always keep ClipFront so near clipping plane is checked for lines
     }
 
     // determine which LOD will be used
@@ -1423,6 +1438,16 @@ void Object::DrawLines(int level, ClipFlags clipFlags, const FrameBase& frame)
     Animate(level);
 
     Matrix4Val pointView = GScene->ScaledInvTransform() * frame.Transform();
+
+    // Deep math logging: 3D lines parameters
+    static int s_objLineLogCounter = 0;
+    if (++s_objLineLogCounter % 500 == 0)
+    {
+        LOG_INFO(Graphics, "[RENDER_MATH] Object::DrawLines (3D segment) -> Pos: ({:.3f}, {:.3f}, {:.3f}), Radius: {:.3f}, ClipFlags: {:#x}, Verts: {}, Faces: {}",
+                 frame.Position().X(), frame.Position().Y(), frame.Position().Z(), GetRadius(), clipFlags, sShape->NPos(), sShape->NFaces());
+        LOG_INFO(Graphics, "[RENDER_MATH] Object::DrawLines pointView translation: ({:.3f}, {:.3f}, {:.3f})",
+                 pointView.Position().X(), pointView.Position().Y(), pointView.Position().Z());
+    }
 
     // draw all points
     TLVertexTable tlTable(this, *sShape, pointView);

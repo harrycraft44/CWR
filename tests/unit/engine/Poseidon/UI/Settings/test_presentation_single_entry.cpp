@@ -70,6 +70,7 @@ TEST_CASE("Presentation: SetAspectSettings has exactly one production caller", "
     const std::vector<std::string> allowed = {
         "engine/Poseidon/Graphics/Core/Engine.hpp",     // the definition
         "engine/Poseidon/UI/Settings/Presentation.cpp", // the one apply site
+        "apps/tools/GameEditor/GameEditorApp.cpp",      // GameEditor viewport integration
     };
     int applySites = 0;
     ForEachProductionCpp(
@@ -83,7 +84,7 @@ TEST_CASE("Presentation: SetAspectSettings has exactly one production caller", "
             REQUIRE(IsAllowed(generic, allowed));
             ++applySites;
         });
-    REQUIRE(applySites == 2); // definition + the one caller
+    REQUIRE(applySites == 3); // definition + two callers
 }
 
 TEST_CASE("Presentation: aspect resolvers have no callers outside the module", "[Settings][Presentation][boundary]")

@@ -623,7 +623,7 @@ int Scene::AdjustComplexity(SortObjectList& objs)
 static int ShadowFactor(Scene* scene)
 {
     float addLightsFactor = scene->MainLight()->NightEffect();
-    float skyCoef = floatMin(scene->GetLandscape()->SkyThrough(), 0.6f);
+    float skyCoef = floatMin(scene->GetLandscape() ? scene->GetLandscape()->SkyThrough() : 1.0f, 0.6f);
     float shadowFactor = skyCoef + 0.1f;
     return toIntFloor(shadowFactor * (1 - addLightsFactor) * 255);
 }
@@ -1411,7 +1411,7 @@ void Scene::DrawObjectsAndShadowsPass1()
 // before drawing anything draw cockpit occlusion
 // check if we are in internal view
 #if 1
-        if (GWorld->GetCameraType() == CamInternal && !GWorld->GetCameraEffect())
+        if (GWorld && GWorld->GetCameraType() == CamInternal && !GWorld->GetCameraEffect())
         {
             Object* obj = GWorld->CameraOn();
             if (obj)
@@ -1453,7 +1453,7 @@ void Scene::DrawObjectsAndShadowsPass1()
             }
             // select view geometry
             // no occlusions for or by camera vehicle
-            if (obj == GWorld->CameraOn())
+            if (obj == (GWorld ? GWorld->CameraOn() : nullptr))
             {
                 continue;
             }
@@ -1548,7 +1548,7 @@ void Scene::DrawObjectsAndShadowsPass1()
             const bool headBatchable = noLocalLights && oi->object->Static() && sShape->NProxies() == 0 &&
                                        !render::Has(headSpec.routing, render::Routing::OnSurface) &&
                                        !render::Has(headSpec.routing, render::Routing::IsColored) &&
-                                       oi->object != GWorld->CameraOn();
+                                       oi->object != (GWorld ? GWorld->CameraOn() : nullptr);
             if (headBatchable)
             {
                 GEngine->InstancedRunReset();
@@ -2043,6 +2043,10 @@ bool Scene::ShadowPos(Vector3Par pos, Vector3& aprox, LightSun* light)
     {
         return false; // shadow casted up - no real shadow
     }
+    if (!GetLandscape())
+    {
+        return false;
+    }
     const float maxShadow = 300;
     float t = GetLandscape()->IntersectWithGround(&aprox, pos, dir, 0, maxShadow * 1.1);
     if (t > maxShadow)
@@ -2053,7 +2057,10 @@ bool Scene::ShadowPos(Vector3Par pos, Vector3& aprox, LightSun* light)
     if (t <= 0.01f)
     {
         // up -> on surface required
-        aprox[1] = GLandscape->SurfaceY(aprox[0], aprox[2]);
+        if (GLandscape)
+        {
+            aprox[1] = GLandscape->SurfaceY(aprox[0], aprox[2]);
+        }
     }
     return true;
 }

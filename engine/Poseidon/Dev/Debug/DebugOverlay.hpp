@@ -21,6 +21,12 @@ union SDL_Event;
 namespace Poseidon::Dev {
 namespace DebugOverlay
 {
+    // Editor UI integration hook. If set, the overlay will call this instead of
+    // rendering the standard Dev panel tabs.
+    typedef void (*EditorUIHookFn)();
+    void SetEditorUIHook(EditorUIHookFn hook);
+
+    // State hooks called by EngineGL33
     void Init(SDL_Window* window, void* glContext);
     void ProcessEvent(const SDL_Event& event);
 

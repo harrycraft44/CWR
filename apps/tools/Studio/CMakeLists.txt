@@ -6,6 +6,8 @@ set(STUDIO_SOURCES
     StudioApp.hpp
     StudioConfig.cpp
     StudioConfig.hpp
+    MissionEditor.cpp
+    MissionEditor.hpp
 )
 
 if(WIN32)

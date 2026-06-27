@@ -3,6 +3,7 @@
 #include <Poseidon/AI/AI.hpp>
 #include <Poseidon/World/Scene/Object.hpp>
 #include <Poseidon/World/Scene/Object2DMapping.hpp>
+#include <Poseidon/World/Terrain/Landscape.hpp>
 
 TEST_CASE("object.hpp compiles", "[scene][object]")
 {
@@ -32,3 +33,20 @@ TEST_CASE("Object2D mapping is independent of face winding", "[scene][object][2d
     CHECK(reversedCorners.topLeft == 1);
     CHECK(reversedCorners.topRight == 2);
 }
+
+TEST_CASE("Object Move when GLOB_LAND is null does not crash", "[scene][object]")
+{
+    REQUIRE(Poseidon::GLandscape == nullptr);
+
+    Poseidon::ObjectPlain obj(nullptr, 123);
+
+    Matrix4 initialTransform;
+    obj.Move(initialTransform);
+
+    obj.Move(Vector3(10.0f, 20.0f, 30.0f));
+
+    CHECK(obj.Position().X() == 10.0f);
+    CHECK(obj.Position().Y() == 20.0f);
+    CHECK(obj.Position().Z() == 30.0f);
+}
+

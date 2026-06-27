@@ -41,6 +41,7 @@ On GNU/Linux, use the matching `linux-x64-clang-rwdi` preset.
 
 ## Project Notes
 
+- [Viewport Rendering Mathematics](docs/RENDERING_MATH.md)
 - [Contributing](CONTRIBUTING.md)
 - [Credits](CREDITS.md)
 - [Third-party notices](THIRD_PARTY_NOTICES.md)

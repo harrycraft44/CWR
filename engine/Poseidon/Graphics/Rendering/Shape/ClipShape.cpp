@@ -202,6 +202,24 @@ Poly* FaceArray::AddNoClip(const Poly& face, TLVertexTable& tlMesh, Scene& scene
 void FaceArray::Draw(const IAnimator* matSource, TLVertexTable& tlTable, const LightList& lights, const Shape& mesh,
                      ClipFlags clipFlags, int spec, const Matrix4& invTransform) const
 {
+    if (mesh.NSections() == 0 && mesh.NFaces() > 0)
+    {
+        ShapeSection defaultSec;
+        defaultSec.beg = mesh.BeginFaces();
+        defaultSec.end = mesh.EndFaces();
+        defaultSec.material = 0;
+        if (mesh.BeginFaces() < mesh.EndFaces())
+        {
+            defaultSec.properties = mesh.Face(mesh.BeginFaces());
+        }
+        defaultSec.surfMat = nullptr;
+        const_cast<Shape&>(mesh).Faces().SetSections(&defaultSec, 1);
+        if (_sections.Size() == 0)
+        {
+            const_cast<FaceArray*>(this)->SetSections(&defaultSec, 1);
+        }
+    }
+
     DoAssert(_sections.Size() == 0 || _sections[_sections.Size() - 1].end == End());
     Engine* engine = GEngine;
     if ((spec & OnSurface) == 0)

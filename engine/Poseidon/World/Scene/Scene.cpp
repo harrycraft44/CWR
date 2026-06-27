@@ -780,7 +780,7 @@ void Scene::BeginObjects()
 
     // precalculate shadow properties - constant precalculation
     float addLightsFactor = GScene->MainLight()->NightEffect();
-    float skyCoef = floatMin(GScene->GetLandscape()->SkyThrough(), 0.6);
+    float skyCoef = floatMin(GScene->GetLandscape() ? GScene->GetLandscape()->SkyThrough() : 1.0f, 0.6);
     float shadowFactor = skyCoef * 0.3 + 0.1;
     int shadowFactorI = toIntFloor(shadowFactor * (1 - addLightsFactor) * 255);
     GEngine->SetShadowFactor(shadowFactorI);

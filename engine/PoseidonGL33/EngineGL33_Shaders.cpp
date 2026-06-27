@@ -54,11 +54,10 @@ out float vFogTC;
 out vec3 vWorldRel;
 
 void main() {
-    float w = 1.0 / aRhw;
-    gl_Position.x = (aPos.x * vpScale.x - 1.0) * w;
-    gl_Position.y = (1.0 - aPos.y * vpScale.y) * w;
-    gl_Position.z = aPos.z * w;
-    gl_Position.w = w;
+    gl_Position.x = aPos.x * vpScale.x - 1.0;
+    gl_Position.y = 1.0 - aPos.y * vpScale.y;
+    gl_Position.z = aPos.z;
+    gl_Position.w = 1.0;
     vColor = aColor;
     vSpecColor = aSpecular;
     vUV0 = aUV0;

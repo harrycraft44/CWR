@@ -80,6 +80,7 @@ bool s_visible = false;
 bool s_selectShadowsTab = false; // one-shot: force-select the Shadows tab next draw
 bool s_selectMemoryTab = false;  // one-shot: force-select the Memory tab next draw
 SDL_Window* s_window = nullptr;
+EditorUIHookFn s_editorUIHook = nullptr;
 // Saved mouse-grab state while the dev panel holds the cursor released.
 bool s_mouseReleasedByPanel = false;
 bool s_savedMouseGrab = false;
@@ -1574,7 +1575,7 @@ void Init(SDL_Window* window, void* glContext)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
     io.IniFilename = nullptr; // no imgui.ini side-effects
     ImGui::StyleColorsDark();
 
@@ -1628,22 +1629,31 @@ void ProcessEvent(const SDL_Event& event)
     }
 }
 
+void SetEditorUIHook(EditorUIHookFn hook)
+{
+    s_editorUIHook = hook;
+}
+
 void NewFrame()
 {
     if (!s_initialized)
         return;
-    if (!AppConfig::Instance().DevMode() && s_visible)
+    if (!AppConfig::Instance().DevMode() && s_visible && !s_editorUIHook)
         SetVisible(false);
-    // Toggle the software cursor with panel visibility.  When the panel is
-    // shown, the engine's UI cursor renders BEHIND ImGui (we composite ImGui
-    // after the game render), so we draw our own cursor as part of ImGui's
-    // drawlist to stay on top.  When hidden, fall back to the engine cursor.
-    ImGui::GetIO().MouseDrawCursor = s_visible;
+        
+    ImGui::GetIO().MouseDrawCursor = s_visible || s_editorUIHook;
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
-    if (s_visible)
+    
+    if (s_editorUIHook)
+    {
+        s_editorUIHook();
+    }
+    else if (s_visible)
+    {
         DrawMainWindow();
+    }
 }
 
 void Render()

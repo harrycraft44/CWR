@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #ifdef _WIN32
 #ifndef NOMINMAX
@@ -10,6 +10,7 @@
 #include <Poseidon/Asset/Probes/SoundPlayer.hpp>
 #include <Poseidon/IO/ParamFile/ParamFile.hpp>
 #include "FileCategory.hpp"
+#include "MissionEditor.hpp"
 #pragma push_macro("DebugLog")
 #undef DebugLog
 #include <imgui.h>
@@ -339,6 +340,8 @@ class StudioApp
     };
     std::shared_ptr<ParamFile> configFile;
     std::string configFilePath;
+    bool visualEditorMode = false;
+    MissionEditor missionEditor;
     char configSearch[256] = {};
     bool configSearchActive = false;
     std::vector<ConfigSearchResult> configSearchResults;
